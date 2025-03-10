@@ -19,6 +19,7 @@ jobs:
       
       - name: Run Python
         run: |
+          ls -la
           python python.py
       
   test_model:
