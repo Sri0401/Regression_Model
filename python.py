@@ -8,7 +8,7 @@ from sklearn.linear_model import LinearRegression
 
 
 # Loading the dataset and splitting the data into dependent and independent variables
-data = pd.read_csv("D:\Regression\house_price_dataset.csv")
+data = pd.read_csv("house_price_dataset.csv")
 X = data.drop(columns=['house_price'])
 Y = data['house_price']
 
