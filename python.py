@@ -1,4 +1,3 @@
-# Importing the necessary Libraries
 import os
 import numpy as np
 import pandas as pd
@@ -6,12 +5,17 @@ from sklearn.metrics import mean_absolute_error, r2_score
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LinearRegression
 
-# Define file path
-file_path = "house_price_dataset.csv"
+# Define possible file paths and check if the dataset exists
+file_paths = ["house_price_dataset.csv", "data/house_price_dataset.csv", "./house_price_dataset.csv"]
 
-# Check if the dataset exists before loading
-if not os.path.exists(file_path):
-    raise FileNotFoundError(f"File '{file_path}' not found. Ensure it is in the correct directory.")
+file_path = None
+for path in file_paths:
+    if os.path.exists(path):
+        file_path = path
+        break
+
+if file_path is None:
+    raise FileNotFoundError(f"Dataset not found. Searched in: {file_paths}")
 
 # Loading the dataset
 data = pd.read_csv(file_path)
@@ -58,3 +62,4 @@ if not X_missing.empty:
     print(f"Predictions for rows with missing data:\n{X_missing_filled}")
 else:
     print("No missing values to predict.")
+
