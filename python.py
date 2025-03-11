@@ -1,65 +1,61 @@
 import os
-import numpy as np
 import pandas as pd
 from sklearn.metrics import mean_absolute_error, r2_score
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LinearRegression
 
-# Define possible file paths and check if the dataset exists
-file_paths = ["house_price_dataset.csv", "data/house_price_dataset.csv", "./house_price_dataset.csv"]
+# Determine the base directory of this script
+base_dir = os.path.dirname(os.path.abspath(__file__))
 
-file_path = None
-for path in file_paths:
-    if os.path.exists(path):
-        file_path = path
-        break
+# Define possible relative locations for the dataset
+paths = [
+    os.path.join(base_dir, "house_price_dataset.csv"),
+    os.path.join(base_dir, "data", "house_price_dataset.csv")
+]
 
-if file_path is None:
-    raise FileNotFoundError(f"Dataset not found. Searched in: {file_paths}")
+# Select the first path where the file exists
+dataset_path = next((path for path in paths if os.path.exists(path)), None)
+if dataset_path is None:
+    raise FileNotFoundError(f"Dataset not found. Searched in: {paths}")
 
-# Loading the dataset
-data = pd.read_csv(file_path)
-
-# Checking for missing values
+# Load the dataset from the selected path
+data = pd.read_csv(dataset_path)
 print("Missing values per column:\n", data.isnull().sum())
 
-# Separating independent and dependent variables
-X = data.drop(columns=['house_price'])
-Y = data['house_price']
+# Ensure the target column exists
+if 'house_price' not in data.columns:
+    raise ValueError("Column 'house_price' not found in dataset.")
 
-# Separating missing and non-missing data
-X_missing = X[X.isnull().any(axis=1)]  # Rows with missing values
-Y_missing = Y.loc[X_missing.index]  # Corresponding target values
+# Separate features and target
+X = data.drop(columns='house_price')
+y = data['house_price']
 
-# Non-missing dataset for training
-X_full = X.dropna()
-Y_full = Y.loc[X_full.index]
+# Split data into rows with missing values and complete rows
+X_missing = X[X.isnull().any(axis=1)]
+X_complete = X.dropna()
+y_complete = y.loc[X_complete.index]
 
-# Ensure there's enough data to split
-if len(X_full) < 10:
-    raise ValueError("Not enough complete data for training. Consider handling missing values differently.")
+# Confirm there is sufficient complete data to train the model
+if len(X_complete) < 10:
+    raise ValueError("Not enough complete data for training.")
 
-# Splitting dataset into training and testing
-X_train, X_test, Y_train, Y_test = train_test_split(X_full, Y_full, test_size=0.3, random_state=42)
+# Train-test split on complete data
+X_train, X_test, y_train, y_test = train_test_split(
+    X_complete, y_complete, test_size=0.3, random_state=42
+)
 
-# Initializing and training the Linear Regression model
+# Initialize and train the linear regression model
 model = LinearRegression()
-model.fit(X_train, Y_train)
+model.fit(X_train, y_train)
 
-# Making predictions
-Y_pred = model.predict(X_test)
+# Make predictions on test data and evaluate the model
+y_pred = model.predict(X_test)
+print(f"R-squared Score: {r2_score(y_test, y_pred):.4f}")
+print(f"Mean Absolute Error: {mean_absolute_error(y_test, y_pred):.2f}")
 
-# Evaluating the model
-r2 = r2_score(Y_test, Y_pred)
-mae = mean_absolute_error(Y_test, Y_pred)
-
-print(f"R-squared Score: {r2:.4f}")
-print(f"Mean Absolute Error: {mae:.2f}")
-
-# Predicting missing values if any
+# Predict values for rows with missing data (filling missing features with training means)
 if not X_missing.empty:
-    X_missing_filled = model.predict(X_missing.fillna(X_train.mean()))  # Fill NA with mean before predicting
-    print(f"Predictions for rows with missing data:\n{X_missing_filled}")
+    X_missing_filled = model.predict(X_missing.fillna(X_train.mean()))
+    print("Predictions for rows with missing values:", X_missing_filled)
 else:
-    print("No missing values to predict.")
-
+    print("No missing values detected.")
